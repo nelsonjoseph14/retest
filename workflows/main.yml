@@ -1,0 +1,35 @@
+name: cicd-workflow
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  containerise-model:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Docker Image
+      run: docker build -t anupamdas0515/ml-model:latest .
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Push to Docker Hub
+      run: docker push anupamdas0515/ml-model:latest
+
+  pull-image-job:
+    needs: containerise-model
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Pull & Run Image
+      run: |
+        docker pull anupamdas0515/ml-model:latest
+        docker run -d -p 5000:5000 anupamdas0515/ml-model:latest
